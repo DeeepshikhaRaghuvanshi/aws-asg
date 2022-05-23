@@ -2,9 +2,11 @@ const express = require('express');
 const route = require("./routes/route");
 const  mongoose  = require('mongoose');
 const app = express();
+const multer = require('multer')
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(multer().any())
 
 mongoose.connect("mongodb+srv://shradha_24:Ourcloudy007@cluster0.tovfx.mongodb.net/group07Database?retryWrites=true&w=majority", {
     useNewUrlParser: true

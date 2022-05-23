@@ -1,10 +1,41 @@
 const bookModel = require("../Models/bookModel");
 const reviewModel = require("../Models/reviewModel");
 const Validator = require("../Validator/valid");
+const aws= require("aws-sdk")
 
+aws.config.update({
+    accessKeyId: "AKIAY3L35MCRVFM24Q7U",
+    secretAccessKey: "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",
+    region: "ap-south-1"
+})
+
+let uploadFile= async ( file) =>{
+   return new Promise( function(resolve, reject) {
+  
+    let s3= new aws.S3({apiVersion: '2006-03-01'}); 
+
+    var uploadParams= {
+        ACL: "public-read",
+        Bucket: "classroom-training-bucket",  //HERE
+        Key: "abc/" + file.originalname, 
+        Body: file.buffer
+    }
+
+
+    s3.upload( uploadParams, function (err, data ){
+        if(err) {
+            return reject({"error": err})
+        }
+        console.log(data)
+        console.log("file uploaded succesfully")
+        return resolve(data.Location)
+    })
+
+   })
+}
 const Book = async function (req, res){
 
-    try {
+     try {
         const data = req.body;
         let { title, excerpt, userId, ISBN, category, subcategory,releasedAt } = data
 
@@ -43,14 +74,24 @@ const Book = async function (req, res){
         //Newly created book can only have isDeleted : false
         if(data.isDeleted&&data.isDeleted!=false) return res.status(400).send({status : false , message : "Newly created book can only have isDeleted : false"})
 
+        let files= req.files
+        if(files && files.length>0){
+    
+            let uploadedFileURL= await uploadFile( files[0] )
+            data.bookCover = uploadedFileURL
+        }
+        else{
+            res.status(400).send({ msg: "No file found" })
+        }
+        
 
         /*----------------------------create book ----------------------------*/
         let savedData = await bookModel.create(data)
         return res.status(201).send({ status: true, message: "success", data: savedData });
     }
-    catch (err) {
-        return res.status(500).send({ status: false, message: err.message });
-    }
+     catch (err) {
+         return res.status(500).send({ status: false, message: err.message });
+     }
 }
 
 
